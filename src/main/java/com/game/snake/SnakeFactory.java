@@ -4,8 +4,8 @@ import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.entity.EntityFactory;
 import com.almasb.fxgl.entity.SpawnData;
 import com.almasb.fxgl.entity.Spawns;
+import com.game.snake.components.BodyMovementComponent;
 import com.game.snake.components.FruitLocationComponent;
-import com.game.snake.components.MovementComponent;
 import javafx.collections.ObservableList;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
@@ -23,6 +23,7 @@ public class SnakeFactory implements EntityFactory {
     public static final String FRUIT_SPAWNER = "fruit";
     public static final String BRICK_SPAWNER = "brick";
     public static final String BORDER_SPAWNER = "border";
+    public static final String GRID_SPAWNER = "grid";
 
 
     // endregion
@@ -37,7 +38,7 @@ public class SnakeFactory implements EntityFactory {
     @Spawns(SNAKE_BODY_SPAWNER)
     public Entity newSnakeBody(SpawnData data){
         Entity entity = build(data, EntityType.SNAKE_BODY, Color.GREENYELLOW);
-        entity.addComponent(new MovementComponent());
+        entity.addComponent(new BodyMovementComponent());
         return entity;
     }
 
@@ -55,6 +56,35 @@ public class SnakeFactory implements EntityFactory {
                 .type(EntityType.BRICK)
                 .viewWithBBox(new Rectangle(TILE_SIZE, TILE_SIZE, Color.BLACK))
                 .zIndex(-2)
+                .build();
+    }
+
+    @Spawns(GRID_SPAWNER)
+    public Entity newGrid(SpawnData data){
+
+        Path path = new Path();
+
+        path.setStroke(Color.BLACK);
+        path.setStrokeWidth(1);
+
+        ObservableList<PathElement> elements = path.getElements();
+
+
+        for (int i = 0; i < getAppWidth(); i+=TILE_SIZE) {
+            elements.add(new MoveTo(i,0));
+            elements.add(new VLineTo(getAppHeight()));
+        }
+
+        for (int i = 0; i < getAppHeight(); i+=TILE_SIZE) {
+            elements.add(new MoveTo(0,i));
+            elements.add(new HLineTo(getAppWidth()));
+        }
+
+
+        return entityBuilder(data)
+                .type(EntityType.GRID)
+                .viewWithBBox(path)
+                .zIndex(5)
                 .build();
     }
 

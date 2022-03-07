@@ -7,7 +7,7 @@ import javafx.geometry.Point2D;
 import static com.game.snake.Consts.*;
 
 
-public class HeadMovementComponent extends MovementComponent {
+public class HeadMovementComponent extends Component {
 
     // region Data Members
 
@@ -19,8 +19,8 @@ public class HeadMovementComponent extends MovementComponent {
 
     // region Constructors
 
-    public HeadMovementComponent(Entity nextPart) {
-        _nextPart = nextPart;
+    public HeadMovementComponent() {
+
     }
 
 
@@ -41,16 +41,14 @@ public class HeadMovementComponent extends MovementComponent {
         }
     }
 
-    @Override
-    public void move(Point2D newPosition) {
-
-        Point2D oldPosition = entity.getPosition();
+    /**
+     * Updates the head position
+     */
+    public void move() {
 
         entity.translate(_direction.multiply(TILE_SIZE));
 
         _hasMovedAfterChange = true;
-
-        _nextPart.getComponent(MovementComponent.class).move(oldPosition);
 
     }
 

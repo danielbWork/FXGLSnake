@@ -2,17 +2,13 @@ package com.game.snake;
 
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
-import com.almasb.fxgl.core.math.FXGLMath;
-import com.almasb.fxgl.dsl.FXGL;
 import com.almasb.fxgl.entity.Entity;
-import com.almasb.fxgl.entity.SpawnData;
 import com.almasb.fxgl.input.Input;
 import com.almasb.fxgl.input.UserAction;
+import com.game.snake.components.BodyMovementComponent;
 import com.game.snake.components.FruitLocationComponent;
 import com.game.snake.components.HeadMovementComponent;
-import com.game.snake.components.MovementComponent;
 import javafx.geometry.Point2D;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.input.KeyCode;
 import javafx.util.Duration;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +25,7 @@ public class SnakeApplication extends GameApplication {
     // region Data Members
 
     private Entity _head;
+    private Entity _tail;
     private List<Entity> _body = new ArrayList<>();
     private Entity _fruit;
 
@@ -50,9 +47,12 @@ public class SnakeApplication extends GameApplication {
 
         _head = spawn(SnakeFactory.SNAKE_HEAD_SPAWNER, width / 2, height / 2);
         _body.clear();
-        _body.add(spawn(SnakeFactory.SNAKE_BODY_SPAWNER, (width / 2) - TILE_SIZE, height / 2));
 
-        _head.addComponent(new HeadMovementComponent(_body.get(0)));
+        _tail = spawn(SnakeFactory.SNAKE_BODY_SPAWNER, (width / 2) - TILE_SIZE, height / 2);
+
+        _body.add(_tail);
+
+        _head.addComponent(new HeadMovementComponent());
     }
 
     // endregion
@@ -87,6 +87,8 @@ public class SnakeApplication extends GameApplication {
             spawn(SnakeFactory.BRICK_SPAWNER, width - TILE_SIZE, y);
         }
 
+        spawn(SnakeFactory.GRID_SPAWNER);
+
         spawn(SnakeFactory.BORDER_SPAWNER);
 
         _fruit = spawn(SnakeFactory.FRUIT_SPAWNER);
@@ -96,10 +98,21 @@ public class SnakeApplication extends GameApplication {
         getGameTimer().runAtInterval(() -> {
 
             if (_head.isActive() && getWorldProperties().booleanProperty(GAME_STARTED).get()) {
-                _head.getComponent(HeadMovementComponent.class).move(null);
+
+                Point2D newBodyPosition = _head.getPosition();
+
+                _head.getComponent(HeadMovementComponent.class).move();
+
+                // Moves the last block to the old head place to optimize the snake
+                _tail.setPosition(newBodyPosition);
+                BodyMovementComponent tailComponent = _tail.getComponent(BodyMovementComponent.class);
+
+                if (tailComponent.getNextBodyPart() != null) {
+                    _tail = tailComponent.getNextBodyPart();
+                }
             }
 
-        }, Duration.seconds(0.2));
+        }, Duration.seconds(0.15));
 
     }
 
@@ -112,11 +125,21 @@ public class SnakeApplication extends GameApplication {
         if (_headLocation.size() > 1 && _head.isActive()) {
 
             if (_headLocation.contains(_fruit)) {
-                Entity entity = _body.get(_body.size() - 1);
-                Entity spawn = spawn(SnakeFactory.SNAKE_BODY_SPAWNER, entity.getPosition());
+
+                Entity spawn = spawn(SnakeFactory.SNAKE_BODY_SPAWNER, _tail.getPosition());
+
+                BodyMovementComponent tailComponent = _tail.getComponent(BodyMovementComponent.class);
+
+                // For first body parts needs to set the tail itself
+                if(tailComponent.getNextBodyPart() == null){
+                    spawn.getComponent(BodyMovementComponent.class).setNextBodyPart(_tail);
+                }
+                else {
+                    spawn.getComponent(BodyMovementComponent.class).setNextBodyPart(tailComponent.getNextBodyPart());
+                }
+                tailComponent.setNextBodyPart(spawn);
 
                 _body.add(spawn);
-                entity.getComponent(MovementComponent.class).setNextPart(spawn);
 
                 _fruit.removeFromWorld();
                 _fruit.getComponent(FruitLocationComponent.class).resetFruitPosition();
@@ -164,10 +187,16 @@ public class SnakeApplication extends GameApplication {
         final Input input = getInput();
 
         //WASD
-        input.addAction(up, KeyCode.W);
-        input.addAction(down, KeyCode.S);
-        input.addAction(left, KeyCode.A);
-        input.addAction(right, KeyCode.D);
+//        input.addAction(up, KeyCode.W);
+//        input.addAction(down, KeyCode.S);
+//        input.addAction(left, KeyCode.A);
+//        input.addAction(right, KeyCode.D);
+
+        // Arrows
+        input.addAction(up, KeyCode.UP);
+        input.addAction(down, KeyCode.DOWN);
+        input.addAction(left, KeyCode.LEFT);
+        input.addAction(right, KeyCode.RIGHT);
 
 
     }
